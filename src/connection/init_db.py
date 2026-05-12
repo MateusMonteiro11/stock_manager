@@ -53,8 +53,7 @@ CREATE TABLE IF NOT EXISTS auditorias (
     id_produto INTEGER NOT NULL,
 
     FOREIGN KEY (id_produto)
-        REFERENCES produtos(id_produto)
-
+        REFERENCES produtos(id_produto)        ON DELETE CASCADE
 );
 """)
 
@@ -73,7 +72,8 @@ CREATE TABLE IF NOT EXISTS auditoria_marketplace (
     id_marketplace INTEGER NOT NULL,
 
     FOREIGN KEY (id_auditoria)
-        REFERENCES auditorias(id_auditoria),
+        REFERENCES auditorias(id_auditoria)
+        ON DELETE CASCADE,
 
     FOREIGN KEY (id_marketplace)
         REFERENCES marketplaces(id_marketplace)

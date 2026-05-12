@@ -133,6 +133,20 @@ def remover_produto(id_produto):
     try:
 
         cursor.execute("""
+        DELETE FROM auditoria_marketplace
+        WHERE id_auditoria IN (
+            SELECT id_auditoria
+            FROM auditorias
+            WHERE id_produto = ?
+        )
+        """, (id_produto,))
+
+        cursor.execute("""
+        DELETE FROM auditorias
+        WHERE id_produto = ?
+        """, (id_produto,))
+
+        cursor.execute("""
         DELETE FROM produtos
         WHERE id_produto = ?
         """, (id_produto,))
