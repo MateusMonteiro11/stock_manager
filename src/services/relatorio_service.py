@@ -1,87 +1,97 @@
+import os
+
+from openpyxl import Workbook
+from openpyxl.styles import Font
+
 from connection.auditoria_repository import (
     listar_auditorias,
     listar_marketplaces_auditoria
 )
 
-# Gera um relatorio em TXT (Por enquanto, iremos gerar apenas em TXT, mas futuramente podemos expandir para PDF ou Excel)
 
-def gerar_relatorio_txt():
-
+def gerar_relatorio_xlsx():
     auditorias = listar_auditorias()
 
     if not auditorias:
-
         print("\n⚠ Nenhuma auditoria encontrada.")
         return
 
-    with open(
+    os.makedirs("relatorios", exist_ok=True)
 
-        "relatorios/relatorio_auditoria.txt",
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Auditorias"
 
-        "w",
+    cabecalhos = [
+        "ID Auditoria",
+        "Produto",
+        "Estoque Consolidado",
+        "Status",
+        "Data",
+        "Marketplace",
+        "Estoque Marketplace"
+    ]
 
-        encoding="utf-8"
+    sheet.append(cabecalhos)
 
-    ) as arquivo:
+    for cell in sheet[1]:
+        cell.font = Font(bold=True)
 
-        arquivo.write(
-            "====================================\n"
+    for auditoria in auditorias:
+        id_auditoria = auditoria[0]
+        produto = auditoria[1]
+        estoque_consolidado = auditoria[2]
+        status = auditoria[3]
+        data = auditoria[4]
+
+        marketplaces = listar_marketplaces_auditoria(
+            id_auditoria
         )
 
-        arquivo.write(
-            "RELATÓRIO DE AUDITORIA DE ESTOQUE\n"
-        )
-
-        arquivo.write(
-            "====================================\n\n"
-        )
-
-        for auditoria in auditorias:
-
-            id_auditoria = auditoria[0]
-
-            marketplaces = listar_marketplaces_auditoria(
-                id_auditoria
-            )
-
-            arquivo.write(
-                f"AUDITORIA #{auditoria[0]}\n"
-            )
-
-            arquivo.write(
-                f"Produto: {auditoria[1]}\n"
-            )
-
-            arquivo.write(
-                f"Estoque Consolidado: {auditoria[2]}\n"
-            )
-
-            arquivo.write(
-                f"Status: {auditoria[3]}\n"
-            )
-
-            arquivo.write(
-                f"Data: {auditoria[4]}\n\n"
-            )
-
-            arquivo.write(
-                "ESTOQUES ENCONTRADOS\n"
-            )
-
+        if marketplaces:
             for marketplace in marketplaces:
+                nome_marketplace = marketplace[0]
+                estoque_marketplace = marketplace[1]
 
-                arquivo.write(
-                    f"- {marketplace[0]}: "
-                    f"{marketplace[1]}\n"
-                )
+                sheet.append([
+                    id_auditoria,
+                    produto,
+                    estoque_consolidado,
+                    status,
+                    str(data),
+                    nome_marketplace,
+                    estoque_marketplace
+                ])
+        else:
+            sheet.append([
+                id_auditoria,
+                produto,
+                estoque_consolidado,
+                status,
+                str(data),
+                "",
+                ""
+            ])
 
-            arquivo.write(
-                "\n------------------------------------\n\n"
-            )
+    larguras = {
+        "A": 15,
+        "B": 30,
+        "C": 20,
+        "D": 20,
+        "E": 22,
+        "F": 20,
+        "G": 22
+    }
 
-    print("""
+    for coluna, largura in larguras.items():
+        sheet.column_dimensions[coluna].width = largura
+
+    caminho_arquivo = "relatorios/relatorio_auditoria.xlsx"
+    workbook.save(caminho_arquivo)
+
+    print(f"""
 ✅ Relatório gerado com sucesso.
 
 Local:
-relatorios/relatorio_auditoria.txt
+{caminho_arquivo}
 """)

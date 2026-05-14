@@ -26,7 +26,7 @@ from services.auditoria_service import (
 )
 
 from services.relatorio_service import (
-    gerar_relatorio_txt
+    gerar_relatorio_xlsx
 )
 
 from connection.auditoria_repository import (
@@ -210,7 +210,7 @@ Data:
     # Gera o relatorio
     elif opcao == "8":
 
-        gerar_relatorio_txt()
+        gerar_relatorio_xlsx()
 
         pausar()
 
