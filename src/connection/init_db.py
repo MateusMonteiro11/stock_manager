@@ -1,101 +1,94 @@
-from conexao import conn, cursor
+from connection.conexao import conn, cursor
 
 
-# Tabela de produtos, para armazenar as informações básicas dos produtos
+def inicializar_banco():
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS produtos (
+    # Tabela de produtos
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS produtos (
 
-    id_produto INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_produto INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    nome TEXT NOT NULL,
+        nome TEXT NOT NULL,
 
-    sku TEXT UNIQUE NOT NULL,
+        sku TEXT UNIQUE NOT NULL,
 
-    categoria TEXT,
+        categoria TEXT,
 
-    estoque_oficial INTEGER DEFAULT 0
-        CHECK(estoque_oficial >= 0)
+        estoque_oficial INTEGER DEFAULT 0
+            CHECK(estoque_oficial >= 0)
 
-);
-""")
+    );
+    """)
 
-# Tabela de marketplaces, para armazenar os diferentes marketplaces onde os produtos são vendidos
+    # Tabela de marketplaces
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS marketplaces (
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS marketplaces (
+        id_marketplace INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    id_marketplace INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT UNIQUE NOT NULL
 
-    nome TEXT UNIQUE NOT NULL
+    );
+    """)
 
-);
-""")
+    # Tabela de auditorias
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS auditorias (
 
-# Tabela de auditorias, para armazenar o resultado da auditoria de cada produto
+        id_auditoria INTEGER PRIMARY KEY AUTOINCREMENT,
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS auditorias (
+        estoque_consolidado INTEGER NOT NULL,
 
-    id_auditoria INTEGER PRIMARY KEY AUTOINCREMENT,
+        status TEXT NOT NULL
+            CHECK(status IN (
+                'CONSISTENTE',
+                'DIVERGENTE',
+                'REVISAR'
+            )),
 
-    estoque_consolidado INTEGER NOT NULL,
+        data_auditoria TEXT NOT NULL,
 
-    status TEXT NOT NULL
-        CHECK(status IN (
-            'CONSISTENTE',
-            'DIVERGENTE',
-            'REVISAR'
-        )),
+        id_produto INTEGER NOT NULL,
 
-    data_auditoria TEXT NOT NULL,
+        FOREIGN KEY (id_produto)
+            REFERENCES produtos(id_produto)
+            ON DELETE CASCADE
+    );
+    """)
 
-    id_produto INTEGER NOT NULL,
+    # Auditoria marketplace
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS auditoria_marketplace (
 
-    FOREIGN KEY (id_produto)
-        REFERENCES produtos(id_produto)        ON DELETE CASCADE
-);
-""")
+        id_auditoria_market INTEGER PRIMARY KEY AUTOINCREMENT,
 
-# Tabela de auditoria por marketplace, para armazenar o estoque encontrado em cada marketplace
+        estoque_encontrado INTEGER NOT NULL
+            CHECK(estoque_encontrado >= 0),
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS auditoria_marketplace (
+        id_auditoria INTEGER NOT NULL,
 
-    id_auditoria_market INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_marketplace INTEGER NOT NULL,
 
-    estoque_encontrado INTEGER NOT NULL
-        CHECK(estoque_encontrado >= 0),
+        FOREIGN KEY (id_auditoria)
+            REFERENCES auditorias(id_auditoria)
+            ON DELETE CASCADE,
 
-    id_auditoria INTEGER NOT NULL,
+        FOREIGN KEY (id_marketplace)
+            REFERENCES marketplaces(id_marketplace)
 
-    id_marketplace INTEGER NOT NULL,
+    );
+    """)
 
-    FOREIGN KEY (id_auditoria)
-        REFERENCES auditorias(id_auditoria)
-        ON DELETE CASCADE,
+    # Marketplaces iniciais
+    cursor.execute("""
+    INSERT OR IGNORE INTO marketplaces (nome)
+    VALUES
+        ('Shopee'),
+        ('Mercado Livre'),
+        ('Amazon')
+    """)
 
-    FOREIGN KEY (id_marketplace)
-        REFERENCES marketplaces(id_marketplace)
+    conn.commit()
 
-);
-""")
-
-# Marketplaces iniciais, somente para teste, podem ser removidos depois
-
-cursor.execute("""
-INSERT OR IGNORE INTO marketplaces (nome)
-VALUES
-    ('Shopee'),
-    ('Mercado Livre'),
-    ('Amazon')
-""")
-
-
-# Salva as alterações e fecha a conexão
-
-conn.commit()
-
-print("Banco de dados inicializado com sucesso.")
-
-conn.close()
+    print("Banco de dados inicializado com sucesso.")
