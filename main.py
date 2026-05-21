@@ -312,7 +312,7 @@ Estoque Oficial: {produto[4]}"""
                     dados.append([
                         a[0],  # ID
                         a[1],  # Produto
-                        a[2],  # Est. Consolidado
+                        a[2],  # Consolidado ou Estoque Oficial
                         a[3],  # Status
                         a[4]   # Data
                     ])

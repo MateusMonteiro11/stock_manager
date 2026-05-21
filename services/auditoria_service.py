@@ -79,7 +79,7 @@ def realizar_auditoria(
         return
 
     # ==========================================
-    # MARKETPLACES FIXOS
+    # Marketplaces fixos, podem ser alterados futuramente.
     # 1 = Shopee
     # 2 = Mercado Livre
     # 3 = Amazon

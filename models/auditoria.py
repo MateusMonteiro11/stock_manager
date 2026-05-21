@@ -27,9 +27,7 @@ class Auditoria:
         self.id_produto = id_produto
 
 
-    # ==========================================
-    # REPRESENTAÇÃO TEXTO
-    # ==========================================
+    # Representação em string do objeto Auditoria
 
     def __str__(self):
 
