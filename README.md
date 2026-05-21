@@ -189,4 +189,4 @@ pyinstaller main.spec
 
 # Autor
 
-Desenvolvido por Mateus Monteiro em parceria com projeto acadêmico vinculado à faculdade e empresa colaboradora.
+Desenvolvido por Mateus Monteiro e Arthur Souza em parceria com projeto acadêmico vinculado à faculdade e empresa colaboradora.
