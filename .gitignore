@@ -20,6 +20,7 @@ build/
 # SQLITE DATABASE
 # ==========================================
 
+database/*.db
 *.db
 *.sqlite3
 
@@ -28,10 +29,7 @@ build/
 # RELATÓRIOS GERADOS
 # ==========================================
 
-relatorios/*.txt
-relatorios/*.pdf
 relatorios/*.xlsx
-
 
 # ==========================================
 # AMBIENTE VIRTUAL
