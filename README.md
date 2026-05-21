@@ -107,7 +107,7 @@ Além do desenvolvimento funcional da aplicação, o projeto também teve como f
 
 O projeto possui versão executável para Windows.
 
-Basta executar:
+Baixe o arquivo .zip da última release e depois basta executar:
 
 ```txt
 StockManager.exe
