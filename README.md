@@ -80,9 +80,8 @@ Além do desenvolvimento funcional da aplicação, o projeto também teve como f
 
 > Cadastro de produtos de forma intuítiva e prática.
 
-```md
 ![Cadastro de Produtos](./assets/cadastro.gif)
-```
+
 
 ---
 
@@ -90,9 +89,7 @@ Além do desenvolvimento funcional da aplicação, o projeto também teve como f
 
 > Valida uma auditoria através do ID do produto registrado.
 
-```md
 ![Auditoria](./assets/auditoria.gif)
-```
 
 ---
 
@@ -100,9 +97,7 @@ Além do desenvolvimento funcional da aplicação, o projeto também teve como f
 
 > Faz a conversão automática dos detalhes da auditoria em planilhas no excel.
 
-```md
 ![Relatórios](./assets/relatorio.gif)
-```
 
 ---
 
