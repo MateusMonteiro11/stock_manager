@@ -1,0 +1,19 @@
+{
+  "seller_id": "123456",
+  "captured_at": "2026-09-13T22:00:00Z",
+  "results": [
+    {
+      "id": "MLB123456789",
+      "title": "Torneira Gourmet Preta",
+      "status": "active",
+      "variations": [
+        {
+          "id": "987654",
+          "seller_custom_field": "TOR-001-PRETA",
+          "available_quantity": 17,
+          "location_id": null
+        }
+      ]
+    }
+  ]
+}

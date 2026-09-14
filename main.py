@@ -9,15 +9,16 @@ inicializar_banco()
 
 from services.estoque_service import (
     cadastrar_novo_produto,
-    exibir_produtos,
-    exibir_produto,
+    listar_produtos_cadastrados,
+    buscar_produto,
     alterar_estoque,
     excluir_produto
 )
-from services.auditoria_service import realizar_auditoria
+from services.auditoria_service import (
+    listar_historico_auditorias,
+    realizar_auditoria,
+)
 from services.relatorio_service import gerar_relatorio_xlsx
-from connection.auditoria_repository import listar_auditorias
-from connection.produto_repository import buscar_produto_por_id
 
 sg.theme('DarkBlue3')
 sg.set_options(font=('Arial', 10))
@@ -83,7 +84,6 @@ def criar_layout_auditoria():
         [sg.Text('ID do Produto:'), sg.InputText(key='id_auditoria', size=(30, 1))],
         [sg.Text('Estoque Shopee:'), sg.InputText(key='shopee', size=(30, 1))],
         [sg.Text('Estoque Mercado Livre:'), sg.InputText(key='mercado_livre', size=(30, 1))],
-        [sg.Text('Estoque Amazon:'), sg.InputText(key='amazon', size=(30, 1))],
         [sg.Button('Realizar Auditoria', size=(15, 1)), sg.Button('Cancelar', size=(15, 1))],
         [sg.Multiline(size=(50, 10), key='output', disabled=True)],
     ]
@@ -131,19 +131,20 @@ def main():
                     elif not sku:
                         output = "❌ SKU inválido."
                     else:
-                        cadastrar_novo_produto(nome, sku, categoria)
-                        output = "✅ Produto cadastrado com sucesso!"
-                        window['nome_produto'].update('')
-                        window['sku_produto'].update('')
-                        window['categoria_produto'].update('')
+                        sucesso = cadastrar_novo_produto(nome, sku, categoria)
+                        if sucesso:
+                            output = "✅ Produto cadastrado com sucesso!"
+                            window['nome_produto'].update('')
+                            window['sku_produto'].update('')
+                            window['categoria_produto'].update('')
+                        else:
+                            output = "⚠ Não foi possível cadastrar o produto."
                     
                     window['output'].update(output)
             
             window.close()
         
         elif event == 'Listar Produtos':
-            from connection.produto_repository import listar_produtos
-
             def atualizar_tabela(window, produtos):
                 dados = []
                 for p in produtos:
@@ -156,7 +157,7 @@ def main():
                     ])
                 window['tabela_produtos'].update(values=dados)
 
-            produtos_list = listar_produtos()
+            produtos_list = listar_produtos_cadastrados()
             layout_lista = [
                 [sg.Text('LISTA DE PRODUTOS', font=('Arial', 14, 'bold'))],
                 [sg.Text('Pesquisar:')],
@@ -212,7 +213,7 @@ def main():
                     if id_produto is None:
                         window['output'].update("❌ ID inválido.")
                     else:
-                        produto = buscar_produto_por_id(id_produto)
+                        produto = buscar_produto(id_produto)
                         if not produto:
                             window['output'].update("⚠ Produto não encontrado.")
                         else:
@@ -243,10 +244,13 @@ Estoque Oficial: {produto[4]}"""
                     elif estoque is None:
                         output = "❌ Estoque inválido."
                     else:
-                        alterar_estoque(id_produto, estoque)
-                        output = "✅ Estoque atualizado com sucesso!"
-                        window['id_atualizar'].update('')
-                        window['novo_estoque'].update('')
+                        sucesso = alterar_estoque(id_produto, estoque)
+                        if sucesso:
+                            output = "✅ Estoque atualizado com sucesso!"
+                            window['id_atualizar'].update('')
+                            window['novo_estoque'].update('')
+                        else:
+                            output = "⚠ Produto não encontrado."
                     
                     window['output'].update(output)
             
@@ -266,9 +270,12 @@ Estoque Oficial: {produto[4]}"""
                     if id_produto is None:
                         window['output'].update("❌ ID inválido.")
                     else:
-                        excluir_produto(id_produto)
-                        window['output'].update("✅ Produto removido com sucesso!")
-                        window['id_remover'].update('')
+                        sucesso = excluir_produto(id_produto)
+                        if sucesso:
+                            window['output'].update("✅ Produto removido com sucesso!")
+                            window['id_remover'].update('')
+                        else:
+                            window['output'].update("⚠ Produto não encontrado.")
             
             window.close()
         
@@ -284,27 +291,28 @@ Estoque Oficial: {produto[4]}"""
                     id_produto = validar_inteiro(values['id_auditoria'])
                     shopee = validar_estoque(values['shopee'])
                     ml = validar_estoque(values['mercado_livre'])
-                    amazon = validar_estoque(values['amazon'])
                     
                     output = ""
                     if id_produto is None:
                         output = "❌ ID do produto inválido."
-                    elif shopee is None or ml is None or amazon is None:
+                    elif shopee is None or ml is None:
                         output = "❌ Um ou mais estoques inválidos."
                     else:
-                        realizar_auditoria(id_produto, shopee, ml, amazon)
-                        output = "✅ Auditoria realizada com sucesso!"
-                        window['id_auditoria'].update('')
-                        window['shopee'].update('')
-                        window['mercado_livre'].update('')
-                        window['amazon'].update('')
+                        sucesso = realizar_auditoria(id_produto, shopee, ml)
+                        if sucesso:
+                            output = "✅ Auditoria realizada com sucesso!"
+                            window['id_auditoria'].update('')
+                            window['shopee'].update('')
+                            window['mercado_livre'].update('')
+                        else:
+                            output = "⚠ Não foi possível realizar a auditoria."
                     
                     window['output'].update(output)
             
             window.close()
         
         elif event == 'Histórico de Auditorias':
-            auditorias = listar_auditorias()
+            auditorias = listar_historico_auditorias()
 
             def atualizar_tabela_auditoria(window, auditorias):
                 dados = []
@@ -375,7 +383,7 @@ Estoque Oficial: {produto[4]}"""
                     break
 
                 if event == 'Gerar':
-                    auditorias = listar_auditorias()
+                    auditorias = listar_historico_auditorias()
 
                     if not auditorias:
                         window['output_relatorio'].update("⚠ Nenhuma auditoria encontrada!\n\nPara gerar um relatório, você precisa:\n\n1. Cadastrar produtos\n2. Realizar auditorias dos produtos\n\nClique em 'Realizar Auditoria' no menu principal para começar.")

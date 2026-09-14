@@ -1,27 +1,37 @@
-import os
+"""Geração do relatório operacional de auditoria em XLSX."""
+
+from pathlib import Path
 
 from openpyxl import Workbook
 from openpyxl.styles import Font
 
-from connection.auditoria_repository import (
-    listar_auditorias,
-    listar_marketplaces_auditoria
-)
+from repositories.interfaces import ReportRepository
 
 
-def gerar_relatorio_xlsx():
-    auditorias = listar_auditorias()
+def _repository(repository=None) -> ReportRepository:
+    if repository is not None:
+        return repository
+    from connection.sqlite_repositories import SQLiteAuditRepository
 
+    return SQLiteAuditRepository()
+
+
+def gerar_relatorio_xlsx(
+    caminho_arquivo="relatorios/relatorio_auditoria.xlsx",
+    repository=None,
+):
+    report_repository = _repository(repository)
+    auditorias = report_repository.list_all()
     if not auditorias:
         print("\n⚠ Nenhuma auditoria encontrada.")
-        return
+        return None
 
-    os.makedirs("relatorios", exist_ok=True)
+    destino = Path(caminho_arquivo)
+    destino.parent.mkdir(parents=True, exist_ok=True)
 
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Auditorias"
-
     cabecalhos = [
         "ID Auditoria",
         "Produto",
@@ -29,30 +39,17 @@ def gerar_relatorio_xlsx():
         "Status",
         "Data",
         "Marketplace",
-        "Estoque Marketplace"
+        "Estoque Marketplace",
     ]
-
     sheet.append(cabecalhos)
-
     for cell in sheet[1]:
         cell.font = Font(bold=True)
 
     for auditoria in auditorias:
-        id_auditoria = auditoria[0]
-        produto = auditoria[1]
-        estoque_consolidado = auditoria[2]
-        status = auditoria[3]
-        data = auditoria[4]
-
-        marketplaces = listar_marketplaces_auditoria(
-            id_auditoria
-        )
-
+        id_auditoria, produto, estoque_consolidado, status, data = auditoria
+        marketplaces = report_repository.list_marketplaces(id_auditoria)
         if marketplaces:
-            for marketplace in marketplaces:
-                nome_marketplace = marketplace[0]
-                estoque_marketplace = marketplace[1]
-
+            for nome_marketplace, estoque_marketplace in marketplaces:
                 sheet.append([
                     id_auditoria,
                     produto,
@@ -60,7 +57,7 @@ def gerar_relatorio_xlsx():
                     status,
                     str(data),
                     nome_marketplace,
-                    estoque_marketplace
+                    estoque_marketplace,
                 ])
         else:
             sheet.append([
@@ -70,28 +67,25 @@ def gerar_relatorio_xlsx():
                 status,
                 str(data),
                 "",
-                ""
+                "",
             ])
 
-    larguras = {
+    for coluna, largura in {
         "A": 15,
         "B": 30,
         "C": 20,
         "D": 20,
         "E": 22,
         "F": 20,
-        "G": 22
-    }
-
-    for coluna, largura in larguras.items():
+        "G": 22,
+    }.items():
         sheet.column_dimensions[coluna].width = largura
 
-    caminho_arquivo = "relatorios/relatorio_auditoria.xlsx"
-    workbook.save(caminho_arquivo)
-
+    workbook.save(destino)
     print(f"""
-✅ Relatório gerado com sucesso.
+Relatório gerado com sucesso.
 
 Local:
-{caminho_arquivo}
+{destino}
 """)
+    return destino

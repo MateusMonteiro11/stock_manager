@@ -1,4 +1,5 @@
 from connection.conexao import conn, cursor
+from contracts.inventory_snapshot import Marketplace
 
 # Cria a auditoria
 
@@ -47,11 +48,20 @@ def salvar_estoque_marketplace(
 
     estoque_encontrado,
     id_auditoria,
-    id_marketplace
+    marketplace
 
 ):
 
     try:
+
+        marketplace = Marketplace.from_value(marketplace)
+        cursor.execute(
+            "SELECT id_marketplace FROM marketplaces WHERE nome = ?",
+            (marketplace.display_name,),
+        )
+        registro_marketplace = cursor.fetchone()
+        if not registro_marketplace:
+            raise ValueError("Marketplace não cadastrado no banco.")
 
         cursor.execute("""
         INSERT INTO auditoria_marketplace (
@@ -66,15 +76,18 @@ def salvar_estoque_marketplace(
 
             estoque_encontrado,
             id_auditoria,
-            id_marketplace
+            registro_marketplace[0]
 
         ))
 
         conn.commit()
 
+        return True
+
     except Exception as erro:
 
         print(f"\n❌ Erro ao salvar marketplace: {erro}")
+        return False
 
 
 # Faz a listagem de auditorias
@@ -147,7 +160,12 @@ def listar_marketplaces_auditoria(id_auditoria):
 
     try:
 
-        cursor.execute("""
+        supported_names = tuple(
+            marketplace.display_name for marketplace in Marketplace
+        )
+        placeholders = ", ".join("?" for _ in supported_names)
+
+        cursor.execute(f"""
         SELECT
 
             m.nome,
@@ -159,7 +177,10 @@ def listar_marketplaces_auditoria(id_auditoria):
             ON am.id_marketplace = m.id_marketplace
 
         WHERE am.id_auditoria = ?
-        """, (id_auditoria,))
+          AND m.nome IN ({placeholders})
+
+        ORDER BY m.nome
+        """, (id_auditoria,) + supported_names)
 
         marketplaces = cursor.fetchall()
 

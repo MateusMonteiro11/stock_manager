@@ -1,7 +1,12 @@
-from connection.conexao import conn, cursor
+from contracts.inventory_snapshot import Marketplace
 
 
-def inicializar_banco():
+def inicializar_banco(database_connection=None):
+    if database_connection is None:
+        from connection.conexao import conn
+
+        database_connection = conn
+    cursor = database_connection.cursor()
 
     # Tabela de produtos
     cursor.execute("""
@@ -75,20 +80,32 @@ def inicializar_banco():
             ON DELETE CASCADE,
 
         FOREIGN KEY (id_marketplace)
-            REFERENCES marketplaces(id_marketplace)
+            REFERENCES marketplaces(id_marketplace),
+
+        UNIQUE (id_auditoria, id_marketplace)
 
     );
     """)
 
-    # Marketplaces iniciais
-    cursor.execute("""
-    INSERT OR IGNORE INTO marketplaces (nome)
-    VALUES
-        ('Shopee'),
-        ('Mercado Livre'),
-        ('Amazon')
-    """)
+    # Marketplaces atuais. Registros antigos sem qualquer vínculo podem ser
+    # removidos com segurança; históricos referenciados são preservados.
+    supported_names = tuple(marketplace.display_name for marketplace in Marketplace)
+    placeholders = ", ".join("?" for _ in supported_names)
+    cursor.execute(
+        f"""
+        DELETE FROM marketplaces
+        WHERE nome NOT IN ({placeholders})
+          AND id_marketplace NOT IN (
+              SELECT DISTINCT id_marketplace FROM auditoria_marketplace
+          )
+        """,
+        supported_names,
+    )
+    cursor.executemany(
+        "INSERT OR IGNORE INTO marketplaces (nome) VALUES (?)",
+        [(name,) for name in supported_names],
+    )
 
-    conn.commit()
+    database_connection.commit()
 
     print("Banco de dados inicializado com sucesso.")

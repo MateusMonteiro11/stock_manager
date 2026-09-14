@@ -1,51 +1,53 @@
-from connection.produto_repository import (
-    cadastrar_produto,
-    listar_produtos,
-    buscar_produto_por_id,
-    atualizar_estoque_oficial,
-    remover_produto,
-    sku_existe
-)
+"""Regras de negócio do cadastro e estoque interno."""
 
-# Cadastra um novo produto no banco
+from typing import Optional
 
-def cadastrar_novo_produto(nome, sku, categoria):
+from repositories.interfaces import ProductRepository
 
+
+def _repository(repository: Optional[ProductRepository] = None) -> ProductRepository:
+    if repository is not None:
+        return repository
+    from connection.sqlite_repositories import SQLiteProductRepository
+
+    return SQLiteProductRepository()
+
+
+def cadastrar_novo_produto(nome, sku, categoria, repository=None):
     if not nome.strip():
-
         print("\n❌ Nome inválido.")
-        return
-
+        return False
     if not sku.strip():
-
         print("\n❌ SKU inválido.")
-        return
+        return False
 
-    if sku_existe(sku):
-
+    repo = _repository(repository)
+    if repo.sku_exists(sku):
         print("\n⚠ SKU já cadastrado.")
-        return
+        return False
 
-    cadastrar_produto(nome, sku, categoria)
+    repo.create(nome, sku, categoria)
+    return True
 
 
-# Exibe os produtos do banco
+def listar_produtos_cadastrados(repository=None):
+    return _repository(repository).list_all()
 
-def exibir_produtos():
 
-    produtos = listar_produtos()
+def buscar_produto(id_produto, repository=None):
+    return _repository(repository).find_by_id(id_produto)
 
+
+def exibir_produtos(repository=None):
+    produtos = listar_produtos_cadastrados(repository)
     if not produtos:
-
         print("\n⚠ Nenhum produto cadastrado.")
         return
 
     print("\n==============================")
     print("LISTA DE PRODUTOS")
     print("==============================")
-
     for produto in produtos:
-
         print(f"""
 ID: {produto[0]}
 Nome: {produto[1]}
@@ -55,14 +57,10 @@ Estoque Oficial: {produto[4]}
 ------------------------------
 """)
 
-# Exibe um produto por ID
 
-def exibir_produto(id_produto):
-
-    produto = buscar_produto_por_id(id_produto)
-
+def exibir_produto(id_produto, repository=None):
+    produto = buscar_produto(id_produto, repository)
     if not produto:
-
         print("\n⚠ Produto não encontrado.")
         return
 
@@ -78,34 +76,25 @@ Categoria: {produto[3]}
 Estoque Oficial: {produto[4]}
 """)
 
-# Altera o estoque oficial de um produto
 
-def alterar_estoque(id_produto, estoque):
-
-    produto = buscar_produto_por_id(id_produto)
-
-    if not produto:
-
+def alterar_estoque(id_produto, estoque, repository=None):
+    repo = _repository(repository)
+    if not repo.find_by_id(id_produto):
         print("\n⚠ Produto não encontrado.")
-        return
-
+        return False
     if estoque < 0:
-
         print("\n❌ Estoque inválido.")
-        return
+        return False
 
-    atualizar_estoque_oficial(id_produto, estoque)
+    repo.update_stock(id_produto, estoque)
+    return True
 
 
-# Excluir um produto
-
-def excluir_produto(id_produto):
-
-    produto = buscar_produto_por_id(id_produto)
-
-    if not produto:
-
+def excluir_produto(id_produto, repository=None):
+    repo = _repository(repository)
+    if not repo.find_by_id(id_produto):
         print("\n⚠ Produto não encontrado.")
-        return
+        return False
 
-    remover_produto(id_produto)
+    repo.remove(id_produto)
+    return True

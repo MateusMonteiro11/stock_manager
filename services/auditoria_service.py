@@ -1,134 +1,91 @@
+"""Regras de auditoria para os marketplaces atuais do MyStock."""
+
 from datetime import datetime
+from typing import Iterable, Optional
 
-from connection.auditoria_repository import (
-    criar_auditoria,
-    salvar_estoque_marketplace
-)
-
-from connection.produto_repository import (
-    buscar_produto_por_id,
-    atualizar_estoque_oficial
-)
-
-# Define o status da auditoria com base nos estoques dos marketplaces
-
-def definir_status(estoques):
-
-    if len(set(estoques)) == 1:
-
-        return "CONSISTENTE"
-
-    return "DIVERGENTE"
+from contracts.inventory_snapshot import Marketplace
+from repositories.interfaces import AuditRepository, ProductRepository
 
 
-# Consolida o estoque
+def _repositories(
+    product_repository: Optional[ProductRepository] = None,
+    audit_repository: Optional[AuditRepository] = None,
+):
+    if product_repository is None or audit_repository is None:
+        from connection.sqlite_repositories import (
+            SQLiteAuditRepository,
+            SQLiteProductRepository,
+        )
 
-def consolidar_estoque(estoques):
+        product_repository = product_repository or SQLiteProductRepository()
+        audit_repository = audit_repository or SQLiteAuditRepository()
+    return product_repository, audit_repository
 
+
+def definir_status(estoques: Iterable[int]):
+    return "CONSISTENTE" if len(set(estoques)) == 1 else "DIVERGENTE"
+
+
+def consolidar_estoque(estoques: Iterable[int]):
     return min(estoques)
 
 
-# Realiza a auditoria de um produto
+def listar_historico_auditorias(audit_repository=None):
+    if audit_repository is None:
+        from connection.sqlite_repositories import SQLiteAuditRepository
+
+        audit_repository = SQLiteAuditRepository()
+    return audit_repository.list_all()
+
 
 def realizar_auditoria(
-
     id_produto,
-
     estoque_shopee,
-
     estoque_ml,
-
-    estoque_amazon
-
+    product_repository=None,
+    audit_repository=None,
 ):
-
-    produto = buscar_produto_por_id(id_produto)
-
+    product_repo, audit_repo = _repositories(product_repository, audit_repository)
+    produto = product_repo.find_by_id(id_produto)
     if not produto:
-
         print("\n⚠ Produto não encontrado.")
-        return
+        return False
 
-    estoques = [
-
-        estoque_shopee,
-        estoque_ml,
-        estoque_amazon
-
-    ]
-
+    estoques_por_marketplace = {
+        Marketplace.SHOPEE: estoque_shopee,
+        Marketplace.MERCADO_LIVRE: estoque_ml,
+    }
+    estoques = tuple(estoques_por_marketplace.values())
     status = definir_status(estoques)
-
     estoque_consolidado = consolidar_estoque(estoques)
+    data_auditoria = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-    data_auditoria = datetime.now().strftime(
-        "%d/%m/%Y %H:%M:%S"
-    )
-
-    id_auditoria = criar_auditoria(
-
+    id_auditoria = audit_repo.create(
         estoque_consolidado,
         status,
         data_auditoria,
-        id_produto
-
-    )
-
-    if not id_auditoria:
-
-        return
-
-    # ==========================================
-    # Marketplaces fixos, podem ser alterados futuramente.
-    # 1 = Shopee
-    # 2 = Mercado Livre
-    # 3 = Amazon
-    # ==========================================
-
-    salvar_estoque_marketplace(
-
-        estoque_shopee,
-        id_auditoria,
-        1
-
-    )
-
-    salvar_estoque_marketplace(
-
-        estoque_ml,
-        id_auditoria,
-        2
-
-    )
-
-    salvar_estoque_marketplace(
-
-        estoque_amazon,
-        id_auditoria,
-        3
-
-    )
-
-    atualizar_estoque_oficial(
-
         id_produto,
-        estoque_consolidado
-
     )
+    if not id_auditoria:
+        return False
+
+    for marketplace, estoque in estoques_por_marketplace.items():
+        audit_repo.save_marketplace_stock(estoque, id_auditoria, marketplace)
+
+    product_repo.update_stock(id_produto, estoque_consolidado)
 
     print("\n===================================")
     print("AUDITORIA REALIZADA COM SUCESSO")
     print("===================================")
-
     print(f"""
 Produto: {produto[1]}
 
 Shopee: {estoque_shopee}
 Mercado Livre: {estoque_ml}
-Amazon: {estoque_amazon}
 
 Status: {status}
 
 Estoque Consolidado:
 {estoque_consolidado}
 """)
+    return True

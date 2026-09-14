@@ -6,6 +6,12 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 
 
 # ==========================================
@@ -16,7 +22,6 @@ build/
 dist/
 .venv/
 *.egg-info/
-*.spec
 
 
 # ==========================================
@@ -39,8 +44,10 @@ relatorios/*.xlsx
 # ==========================================
 
 venv/
-.env/
 .venv/
+.env
+.env.*
+!.env.example
 
 
 # ==========================================
