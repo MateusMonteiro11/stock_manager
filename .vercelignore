@@ -1,0 +1,9 @@
+# Enviar somente os endpoints públicos e seus arquivos de suporte.
+/*
+!api
+!oauth_bridge
+!public
+!pyproject.toml
+!vercel.json
+**/__pycache__/**
+**/*.pyc

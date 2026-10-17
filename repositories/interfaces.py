@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Iterable, Optional, Protocol, Sequence, Tuple
+from typing import Any, Optional, Protocol, Sequence, Tuple
 
 from contracts.inventory_snapshot import InventorySnapshot, Marketplace
 

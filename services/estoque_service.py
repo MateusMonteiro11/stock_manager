@@ -38,45 +38,6 @@ def buscar_produto(id_produto, repository=None):
     return _repository(repository).find_by_id(id_produto)
 
 
-def exibir_produtos(repository=None):
-    produtos = listar_produtos_cadastrados(repository)
-    if not produtos:
-        print("\n⚠ Nenhum produto cadastrado.")
-        return
-
-    print("\n==============================")
-    print("LISTA DE PRODUTOS")
-    print("==============================")
-    for produto in produtos:
-        print(f"""
-ID: {produto[0]}
-Nome: {produto[1]}
-SKU: {produto[2]}
-Categoria: {produto[3]}
-Estoque Oficial: {produto[4]}
-------------------------------
-""")
-
-
-def exibir_produto(id_produto, repository=None):
-    produto = buscar_produto(id_produto, repository)
-    if not produto:
-        print("\n⚠ Produto não encontrado.")
-        return
-
-    print(f"""
-==============================
-PRODUTO ENCONTRADO
-==============================
-
-ID: {produto[0]}
-Nome: {produto[1]}
-SKU: {produto[2]}
-Categoria: {produto[3]}
-Estoque Oficial: {produto[4]}
-""")
-
-
 def alterar_estoque(id_produto, estoque, repository=None):
     repo = _repository(repository)
     if not repo.find_by_id(id_produto):

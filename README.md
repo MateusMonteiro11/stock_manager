@@ -1,137 +1,86 @@
 # MyStock / Stock Manager
 
-Aplicação desktop Python para gerenciamento e auditoria de estoque da Mont Casa Construção. A versão atual mantém o cadastro interno, o SQLite, a auditoria manual e a exportação XLSX, enquanto a arquitetura é preparada para sincronização read-only com marketplaces.
+Aplicação desktop Python para cadastro e auditoria de estoque da Mont Casa Construção, com SQLite local, interface PySimpleGUI e exportação XLSX.
 
-## Marketplaces atuais
+## Execução
 
-- Shopee
-- Mercado Livre
-
-Esses são os únicos marketplaces do domínio. A aplicação não depende dos IDs físicos nem da ordem dos registros na tabela `marketplaces`.
-
-## Funcionalidades atuais
-
-- Cadastro, busca, edição de estoque e remoção de produtos.
-- Auditoria dos estoques observados na Shopee e no Mercado Livre.
-- Consolidação pelo menor estoque observado e identificação de divergências.
-- Histórico de auditorias.
-- Geração de relatório operacional em Excel (`.xlsx`).
-- Interface desktop em PySimpleGUI e persistência SQLite.
-
-## Arquitetura da Sprint 1
-
-```text
-Marketplace API
-      |
-      v
-Read-only Adapter
-      |
-      v
-Normalizer -> InventorySnapshot (contrato interno)
-      |
-      v
-SyncService -> Repository -> Database
-      |
-      v
-AuditService -> UI / XLSX
-```
-
-O JSON externo fica restrito aos normalizers. Services e UI trabalham com o contrato interno `InventorySnapshot` e com interfaces de repository. A interface `MarketplaceAdapter` oferece apenas autenticação, leitura de conta, leitura de inventário e health check; não há operação de escrita em marketplace.
-
-O fluxo operacional planejado é:
-
-```text
-READ -> NORMALIZE -> STORE -> AUDIT -> RECOMMEND -> EXPORT XLSX
-```
-
-O funcionário analisa o relatório e faz manualmente qualquer ajuste nos marketplaces. Uma sincronização posterior poderá confirmar se a divergência foi resolvida.
-
-## Estado das integrações externas
-
-As APIs reais ainda dependem da autorização formal e das credenciais oficiais da Mont Casa. Nesta etapa:
-
-- não são realizadas chamadas HTTP;
-- não existem endpoints, tokens ou credenciais fictícios;
-- os clientes reais falham de forma segura enquanto não configurados/autorizados;
-- fixtures locais exercitam adapters, normalizers, contrato e `SyncService` sem internet;
-- mensagens de erro de sync não reproduzem conteúdo de exceptions externas, evitando vazamento de tokens.
-
-Os arquivos em `tests/fixtures/` são exemplos de desenvolvimento do contrato necessário e não representam dados reais da empresa nem uma cópia integral das APIs.
-
-## Persistência
-
-O SQLite continua sendo a persistência da versão desktop atual e não recebeu migration destrutiva. A nova camada de services depende de interfaces, com wrappers explícitos para os repositories SQLite existentes.
-
-MySQL é o alvo futuro dos dados sincronizados. A proposta de tabelas, chaves, índices, idempotência e integridade referencial está em [`docs/mysql_sync_schema.md`](docs/mysql_sync_schema.md). Ela ainda não foi aplicada e deverá ser revisada com payloads e contas reais na próxima etapa da Sprint 1.
-
-## Configuração e secrets
-
-Copie apenas os nomes necessários de `.env.example` para o mecanismo de configuração do ambiente. O projeto não carrega arquivos `.env` automaticamente e não exige valores para executar o fluxo SQLite atual.
-
-Nunca versione Client Secret, OAuth token, refresh token, Partner Key, `shop_id` real ou credenciais MySQL. O arquivo `.env` está ignorado pelo Git. Secrets não devem ser gravados em snapshots, logs, exceptions da UI ou banco relacional.
-
-## Estrutura relevante
-
-```text
-contracts/                 contrato InventorySnapshot
-integrations/base/         interface MarketplaceAdapter
-integrations/mercadolivre/ cliente seguro, adapter e normalizer
-integrations/shopee/       cliente seguro, adapter e normalizer
-repositories/              interfaces e repository em memória para desenvolvimento
-connection/                SQLite e wrappers das interfaces
-services/                  estoque, auditoria, relatório e sincronização
-tests/fixtures/            payloads locais de desenvolvimento
-docs/                      proposta do schema MySQL
-main.py                    interface desktop
-```
-
-## Como executar pelo código-fonte
-
-Requer Python 3 e as dependências de `requirements.txt`.
-
-```bash
+```powershell
 python -m venv .venv
-```
-
-Windows:
-
-```bat
 .venv\Scripts\activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 python main.py
 ```
 
-Linux/macOS:
+No Linux/macOS, ative o ambiente com `source .venv/bin/activate`. Os atalhos `RUN.bat` e `RUN.sh` também instalam as dependências e iniciam o desktop.
 
-```bash
-source .venv/bin/activate
-pip install -r requirements.txt
-python main.py
+## Funcionalidades
+
+- Cadastro, busca, atualização do estoque interno e remoção de produtos.
+- Auditoria manual dos estoques da Shopee e do Mercado Livre.
+- Consolidação pelo menor estoque observado e identificação de divergências.
+- Histórico de auditorias e relatório Excel.
+
+Os marketplaces são resolvidos pelo nome canônico, sem depender de IDs físicos ou da ordem dos registros no SQLite.
+
+## Integrações read-only
+
+```text
+Marketplace -> Adapter -> Normalizer -> InventorySnapshot
+            -> SyncService -> Repository -> processamento local
 ```
 
-## Testes offline
+`MarketplaceAdapter` expõe somente `authenticate`, `get_account`, `get_inventory` e `health_check`. Os clientes reais permanecem bloqueados até autorização e configuração oficiais. Nenhuma integração cria, altera ou exclui recursos dos marketplaces.
 
-```bash
-python -m unittest discover -s tests -v
+O funcionário analisa o relatório e faz manualmente eventuais ajustes no marketplace. O SQLite continua sendo a persistência operacional do desktop. A proposta futura de MySQL está em [docs/mysql_sync_schema.md](docs/mysql_sync_schema.md); não existe conexão ou migration MySQL implementada.
+
+## OAuth e notificações do Mercado Livre
+
+- `GET /api/mercadolivre/oauth/callback`: encaminha `code/state` pelo navegador para o listener local, que valida o state e descarta o code.
+- `POST /api/mercadolivre/notifications`: valida a estrutura, retorna 200 e descarta o evento, sem sincronização ou persistência remota.
+
+Os dois endpoints são stateless e independentes do desktop e do banco. A configuração pública usa `pyproject.toml`; as dependências do desktop continuam em `requirements.txt`.
+
+Consulte [docs/mercadolivre_oauth_webhook.md](docs/mercadolivre_oauth_webhook.md) para executar `vercel dev`, iniciar o listener e cadastrar as URLs no DevCenter. A troca de code por tokens e o callback da Shopee ainda não estão implementados.
+
+Uma notificação não contém necessariamente o estado autoritativo completo do recurso. O MyStock utiliza chamadas GET autenticadas para obter o estado atualizado; os clientes HTTP dessa etapa ainda dependem de implementação e autorização oficiais.
+
+## Configuração
+
+`.env.example` lista as variáveis disponíveis. O desktop e o listener não carregam `.env` automaticamente. O SQLite atual não exige credenciais de marketplace.
+
+`MYSTOCK_SQLITE_DB_PATH` permite escolher o arquivo SQLite. Sem essa variável, o comportamento legado ao executar pelo código-fonte usa `../database/estoque.db`, relativo à pasta do projeto; no executável, usa `database/estoque.db` ao lado do programa. O módulo de conexão cria a pasta do banco, e o relatório cria sua pasta somente ao exportar.
+
+Nunca versione Client Secret, tokens, Partner Key, identificadores reais de contas ou credenciais de banco. `.env`, bancos, relatórios, ambientes virtuais e caches estão ignorados pelo Git.
+
+## Estrutura
+
+```text
+main.py          interface desktop
+connection/      persistência SQLite
+services/        estoque, auditoria, relatórios e sincronização
+contracts/       InventorySnapshot e valores canônicos
+integrations/    contratos, adapters, clientes e normalizers
+repositories/    interfaces de persistência
+api/             endpoints públicos
+oauth_bridge/    suporte HTTP/OAuth sem dependências de negócio
+scripts/         listener OAuth local
+docs/            configuração OAuth e proposta futura de persistência
+public/          saída estática vazia exigida pela configuração Vercel
 ```
-
-Os testes não usam internet nem credenciais e cobrem normalização, validação do contrato, variantes, isolamento de falhas no sync, domínio sem marketplaces obsoletos, auditoria com os dois marketplaces e geração XLSX.
 
 ## Executável Windows
 
-O build atual continua baseado em PyInstaller:
+Com PyInstaller instalado no ambiente de build:
 
-```bash
+```powershell
 pyinstaller main.spec
 ```
 
-## Próxima etapa (aguardando autorização)
+Bancos e relatórios são criados em execução e não são incorporados ao executável.
 
-- Registrar e configurar as aplicações oficiais.
-- Implementar OAuth/autenticação e clientes HTTP reais.
-- Validar os payloads reais e ajustar normalizers.
-- Implementar o repository MySQL e converter a proposta em migrations.
-- Fazer a primeira sincronização read-only e comparar os resultados com os estoques atuais.
+## Próximas etapas
+
+Validar o fluxo OAuth com a aplicação oficial; implementar a troca de code por tokens em etapa separada; implementar clientes HTTP read-only; validar payloads reais e integrar a persistência dos snapshots ao fluxo local.
 
 ## Autor
 

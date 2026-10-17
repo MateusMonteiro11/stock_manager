@@ -1,87 +1,38 @@
-# ==========================================
-# PYTHON CACHE
-# ==========================================
-
+# Python e ferramentas locais
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .coverage
 coverage.xml
 htmlcov/
-.mypy_cache/
-.ruff_cache/
 
-
-# ==========================================
-# BUILD / COMPILAÇÃO
-# ==========================================
-
+# Builds, caches e arquivos temporários
 build/
 dist/
-.venv/
-*.egg-info/
+.vercel/
+*.log
+temp/
+tmp/
 
-
-# ==========================================
-# SQLITE DATABASE
-# ==========================================
-
-database/*.db
+# Dados locais e configuração privada
 *.db
+*.db-*
+*.sqlite
+*.sqlite-*
 *.sqlite3
-
-
-# ==========================================
-# RELATÓRIOS GERADOS
-# ==========================================
-
+*.sqlite3-*
 relatorios/*.xlsx
-
-# ==========================================
-# AMBIENTE VIRTUAL
-# ==========================================
-
-venv/
-.venv/
 .env
 .env.*
 !.env.example
 
-
-# ==========================================
-# VS CODE
-# ==========================================
-
+# Editor e sistema operacional
 .vscode/
-
-
-# ==========================================
-# PYCHARM
-# ==========================================
-
 .idea/
-
-
-# ==========================================
-# SISTEMA OPERACIONAL
-# ==========================================
-
 .DS_Store
 Thumbs.db
-
-
-# ==========================================
-# LOGS
-# ==========================================
-
-*.log
-
-
-# ==========================================
-# ARQUIVOS TEMPORÁRIOS
-# ==========================================
-
-temp/
-tmp/

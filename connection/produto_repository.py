@@ -78,33 +78,6 @@ def buscar_produto_por_id(id_produto):
         return None
 
 
-# Busca um produto pela sku
-
-def buscar_produto_por_sku(sku):
-
-    try:
-
-        cursor.execute("""
-        SELECT
-            id_produto,
-            nome,
-            sku,
-            categoria,
-            estoque_oficial
-        FROM produtos
-        WHERE sku = ?
-        """, (sku,))
-
-        produto = cursor.fetchone()
-
-        return produto
-
-    except Exception as erro:
-
-        print(f"\n❌ Erro ao buscar SKU: {erro}")
-        return None
-
-
 # Atualiza o estoque oficial
 
 def atualizar_estoque_oficial(id_produto, estoque):

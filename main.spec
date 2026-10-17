@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=['.'],
     binaries=[],
-    datas=[('database', 'database'), ('relatorios', 'relatorios')],
+    datas=[],
     hiddenimports=['connection', 'services', 'contracts', 'repositories', 'PySimpleGUI', 'openpyxl'],
     hookspath=[],
     hooksconfig={},

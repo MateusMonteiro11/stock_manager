@@ -1,9 +1,5 @@
 import PySimpleGUI as sg
 from connection.init_db import inicializar_banco
-import os
-
-os.makedirs("database", exist_ok=True)
-os.makedirs("relatorios", exist_ok=True)
 
 inicializar_banco()
 

@@ -122,38 +122,6 @@ def listar_auditorias():
         print(f"\n❌ Erro ao listar auditorias: {erro}")
         return []
     
-# Busca a auditoria pelo ID
-
-def buscar_auditoria_por_id(id_auditoria):
-
-    try:
-
-        cursor.execute("""
-        SELECT
-
-            a.id_auditoria,
-            p.nome,
-            a.estoque_consolidado,
-            a.status,
-            a.data_auditoria
-
-        FROM auditorias a
-
-        INNER JOIN produtos p
-            ON a.id_produto = p.id_produto
-
-        WHERE a.id_auditoria = ?
-        """, (id_auditoria,))
-
-        auditoria = cursor.fetchone()
-
-        return auditoria
-
-    except Exception as erro:
-
-        print(f"\n❌ Erro ao buscar auditoria: {erro}")
-        return None
-
 # Faz as lista dos marketplaces da auditoria, trazendo o nome do marketplace e o estoque encontrado
 
 def listar_marketplaces_auditoria(id_auditoria):
